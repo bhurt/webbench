@@ -1,0 +1,79 @@
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE TypeOperators      #-}
+
+module API where
+
+    import Data.Text
+    import Servant.API
+    import Data.Int (Int64)
+
+    data Name = Name {
+        firstName :: Text,
+        middleName :: Maybe Text,
+        lastName :: Text,
+        title :: Maybe Text
+    } deriving (Show, Read, Ord, Eq, Generic, Typeable)
+
+    data Address = Address {
+        streetAddress :: Text,
+        city :: Text,
+        state :: Text,
+        zipcode :: Text
+    } deriving (Show, Read, Ord, Eq, Generic, Typeable)
+        
+    data User = User {
+        userId :: Int64,
+        userName :: Name,
+        address :: Address,
+        phoneNumber :: Maybe Text,
+        age :: Int,
+        interests :: [ Text ]
+    } deriving (Show, Read, Ord, Eq, Generic, Typeable)
+
+    data SortBy =
+        FirstName
+        | LastName
+        | City
+        | State
+        | Zipcode
+        | Age
+        deriving (Show, Read, Ord, Eq, Enum, Bounded, Generic, Typeable)
+
+    data Direction =
+        Ascending
+        | Descending
+        deriving (Show, Read, Ord, Eq, Enum, Bounded, Generic, Typeable)
+
+    data Sorting = {
+        sortBy :: SortBy,
+        sortDir :: Direction
+    } deriving (Show, Read, Ord, Eq, Generic, Typeable)
+        
+    type API = "rest" :> "v1" :> UsersAPI
+
+    type UsersAPI = "users" :> QueryParam "limit" Int
+                            :> QueryParam "offset" Int
+                            :> ReqBody '[JSON] [Sorting]
+                            :> Get '[JSON] [User]
+                    :<|> "users" :> Capture "userId" Int64
+                                    :> Get '[JSON] User
+
+    -- A bunch of instance definitions we need
+
+    instance ToJSON Name where
+        toEncoding = genericToEncoding defaultOptions
+
+    instance FromJSON Name
+
+    instance ToJSON Address where
+        toEncoding = genericToEncoding defaultOptions
+
+    instance FromJSON Address
+
+    instance ToJSON User where
+        toEncoding = genericToEncoding defaultOptions
+
+    instance FromJSON User
+
