@@ -1,8 +1,14 @@
-GEM
-  remote: http://rubygems.org/
+GIT
+  remote: git://github.com/stympy/faker.git
+  revision: 5f05153a2a55522304169563739bb0d41d0701f7
+  branch: master
   specs:
     faker (1.7.3)
       i18n (~> 0.5)
+
+GEM
+  remote: http://rubygems.org/
+  specs:
     i18n (0.8.0)
     pg (0.19.0)
 
@@ -10,7 +16,7 @@ PLATFORMS
   ruby
 
 DEPENDENCIES
-  faker
+  faker!
   pg
 
 BUNDLED WITH
