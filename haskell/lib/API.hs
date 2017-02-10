@@ -5,9 +5,12 @@
 
 module API where
 
-    import Data.Text
-    import Servant.API
+    import Data.Aeson
     import Data.Int (Int64)
+    import Data.Text
+    import Data.Typeable
+    import GHC.Generics
+    import Servant.API
 
     data Name = Name {
         firstName :: Text,
@@ -46,7 +49,7 @@ module API where
         | Descending
         deriving (Show, Read, Ord, Eq, Enum, Bounded, Generic, Typeable)
 
-    data Sorting = {
+    data Sorting = Sorting {
         sortBy :: SortBy,
         sortDir :: Direction
     } deriving (Show, Read, Ord, Eq, Generic, Typeable)
@@ -77,3 +80,17 @@ module API where
 
     instance FromJSON User
 
+    instance ToJSON SortBy where
+        toEncoding = genericToEncoding defaultOptions
+
+    instance FromJSON SortBy
+
+    instance ToJSON Direction where
+        toEncoding = genericToEncoding defaultOptions
+
+    instance FromJSON Direction
+
+    instance ToJSON Sorting where
+        toEncoding = genericToEncoding defaultOptions
+
+    instance FromJSON Sorting
