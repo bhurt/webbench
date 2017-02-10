@@ -1,0 +1,16 @@
+apply plugin:'java'
+apply plugin:'wrapper'
+apply plugin:'application'
+
+sourceCompatibility = 1.8
+
+repositories {
+  mavenCentral()
+}
+dependencies {
+  compile group: 'io.undertow', name: 'undertow-core', version: '1.4.8.Final'
+  compile group: 'io.fastjson', name: 'boon', version: '0.34'
+  compile group: 'com.google.guava', name: 'guava', version: '21.0'
+}
+
+mainClassName = "Main"
