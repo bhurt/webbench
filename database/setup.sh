@@ -23,3 +23,5 @@ else
 fi
 
 cat "$HEREDIR/dbinit.sql" | psql webbench webbench
+
+bundle install --path=gems && bundle exec ruby ./populate.rb
