@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS users (
     state VARCHAR NOT NULL,
     zipcode VARCHAR(5) NOT NULL,
     phoneNumber VARCHAR,
-    age INTEGER)
+    age INTEGER);
 
 CREATE TABLE IF NOT EXISTS interests (
     id BIGSERIAL NOT NULL PRIMARY KEY,
