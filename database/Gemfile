@@ -1,0 +1,3 @@
+source 'http://rubygems.org'
+gem 'faker', :github => 'stympy/faker', :branch => 'master'
+gem 'pg'
