@@ -22,7 +22,9 @@ else
   sudo /etc/init.d/postgresql restart
 fi
 
-cat "$HEREDIR/dbinit.sql" | psql webbench webbench
+cat "$HEREDIR/dbinit.sql" | pv | psql webbench webbench
 
 cd "$HEREDIR"
 bundle install --path=gems && bundle exec ruby ./populate.rb
+
+echo "COPY (SELECT * FROM userview) TO STDOUT CSV" | psql webbench webbench | tee "$HEREDIR/userview.csv"

@@ -66,7 +66,9 @@ conn.copy_data(
 end
 
 interest_ids = conn.exec("SELECT id FROM interests").values.flatten
+interest_ids.shuffle!
 user_ids = conn.exec("SELECT id FROM users ORDER BY id ASC").values.flatten
+user_ids.shuffle!
 
 conn.copy_data "COPY userinterests (userid, interestid) FROM STDIN CSV" do
   until user_ids.empty?
@@ -80,9 +82,6 @@ conn.copy_data "COPY userinterests (userid, interestid) FROM STDIN CSV" do
   end
 end
 
-CSV.open("./results.csv", "wb") do |csv|
-  conn.exec("SELECT * FROM userview").each_row do |result|
-    csv << result
-    puts "#{result}\n"
-  end
+conn.exec("SELECT COUNT(*) FROM userview").each_row do |result|
+  puts "Rows in the user view: #{result}\n"
 end
