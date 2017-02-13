@@ -3,10 +3,10 @@ require 'faker'
 require 'csv'
 
 min_interests = 0
-max_interests = 6
-user_count = 1_000_000
+max_interests = 10
+user_count = 10_000_000
 
-conn = PG.connect({user: 'webbench', dbname: 'webbench'})
+conn = PG.connect()
 
 conn.exec("TRUNCATE TABLE userinterests RESTART IDENTITY");
 conn.exec("TRUNCATE TABLE interests RESTART IDENTITY");

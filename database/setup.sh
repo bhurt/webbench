@@ -4,27 +4,33 @@ HEREDIR=`dirname $0`
 cd $HEREDIR
 HEREDIR=`pwd`
 
+: ${PGHOST:=localhost}
+: ${PGPORT:=5432}
+: ${PSQL_USER:=webbench}
+: ${PSQL_PASSWORD:=w3bb3nch}
+: ${PSQL_DATABASE:=webbench}
+
 cd ~postgres
 
-sudo -u postgres dropdb --if-exists -e -w webbench
-sudo -u postgres dropuser --if-exists -e -w webbench
-sudo -u postgres createuser -e -E -w webbench
-sudo -u postgres createdb -e --owner=webbench -w webbench
+sudo -u postgres dropdb --if-exists -e -w "$PSQL_DATABASE"
+sudo -u postgres dropuser --if-exists -e -w "$PSQL_USER"
+sudo -u postgres createuser -e -E -w "$PSQL_USER"
+cat "ALTER USER $PSQL_USER WITH PASSWORD '$PSQL_PASSWORD'" | sudo -u postgres psql -a -w
+sudo -u postgres createdb -e --owner=$PSQL_USER -w "$PSQL_DATABASE"
 
-CONFIG_FILE='/etc/postgresql/9.6/main/pg_hba.conf'
-if sudo grep webbench $CONFIG_FILE
-then
-  echo "Already have webbench defined in the user config file"
-else
-  sudo cp /etc/postgresql/9.6/main/pg_hba.conf /etc/postgresql/9.6/main/pg_hba.conf.old
-  echo -e "\nlocal sameuser webbench trust\n" | sudo tee /etc/postgresql/9.6/main/pg_hba.conf
-  sudo cat /etc/postgresql/9.6/main/pg_hba.conf | sudo tee -a /etc/postgresql/9.6/main/pg_hba.conf
-  sudo /etc/init.d/postgresql restart
-fi
+# Now store the password in a .pgpass file
+export PGPASSFILE="$HEREDIR/.pgpass"
+echo "Creating the postgresql password file at $PGPASSFILE"
+export PGUSER=$PSQL_USER
+export PGDATABASE=$PSQL_DATABASE
+touch "$PGPASSFILE"
+chmod -vv 600 "$PGPASSFILE"
+echo -e "$PGHOST:$PGPORT:$PGDATABASE:$PSQL_USER:$PSQL_PASSWORD\n" | tee "$PGPASSFILE"
+chmod -vv 400 "$PGPASSFILE"
 
-cat "$HEREDIR/dbinit.sql" | pv | psql webbench webbench
+cat "$HEREDIR/dbinit.sql" | pv | psql
 
 cd "$HEREDIR"
 bundle install --path=gems && bundle exec ruby ./populate.rb
 
-echo "COPY (SELECT * FROM userview) TO STDOUT CSV" | psql webbench webbench | tee "$HEREDIR/userview.csv"
+rm -f "$PGPASSFILE"
