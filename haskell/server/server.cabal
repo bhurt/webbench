@@ -28,3 +28,4 @@ executable server
                         , text >= 1.2 && < 1.3
                         , warp >= 3.2 && < 3.3
                         , vector >= 0.11 && < 0.12
+  ghc-options:          -O2
