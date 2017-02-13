@@ -60,6 +60,7 @@ module API where
                             :> QueryParam "offset" Int
                             :> ReqBody '[JSON] [Sorting]
                             :> Post '[JSON] [User]
+                    :<|> "users" :> Get '[JSON] Int64
                     :<|> "users" :> Capture "userId" Int64
                                     :> Get '[JSON] User
 

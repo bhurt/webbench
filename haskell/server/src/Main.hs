@@ -29,9 +29,9 @@ module Main where
             where
                 interests = toList <$> (field :: RowParser (Vector Text))
 
-    getUsers :: Pool Connection -> Maybe Int -> Maybe Int -> [Sorting]
+    postUsers :: Pool Connection -> Maybe Int -> Maybe Int -> [Sorting]
                     -> Handler [User]
-    getUsers pool limit offset sorting = withResource pool gotConnection
+    postUsers pool limit offset sorting = withResource pool gotConnection
         where
             gotConnection conn =
                 let query = fromString $ makeQuery in
@@ -62,6 +62,16 @@ module Main where
             offsetClause (Just n) = " OFFSET " ++ show n
             offsetClause Nothing  = ""
 
+
+    getUserCount :: Pool Connection -> Handler Int64
+    getUserCount pool = withResource pool gotConnection
+        where
+            gotConnection conn = do
+                r <- liftIO $ query_ conn "SELECT count(*) FROM users;"
+                case r of
+                    [] -> return 0
+                    ((Only x):_) -> return x
+
     getAUser :: Pool Connection -> Int64 -> Handler User
     getAUser pool uid = withResource pool gotConnection
         where
@@ -77,7 +87,7 @@ module Main where
     serverProxy = Proxy
 
     server :: Pool Connection -> Server API
-    server pool = getUsers pool :<|> getAUser pool
+    server pool = postUsers pool :<|> getUserCount pool :<|> getAUser pool
 
     getEnvDef :: String -> String -> IO String
     getEnvDef name deflt = do
