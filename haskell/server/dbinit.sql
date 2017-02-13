@@ -29,13 +29,13 @@ CREATE VIEW userView AS
         u.middleName,
         u.lastName,
         u.title,
-        streetAddress,
+        u.streetAddress,
         u.city,
         u.state,
         u.zipcode,
         u.phoneNumber,
         u.age,
-        array_agg(i.name)
+        array_agg(i.name) AS interests
     FROM
             users AS u
         LEFT JOIN
@@ -50,7 +50,7 @@ CREATE VIEW userView AS
         u.middleName,
         u.lastName,
         u.title,
-        streetAddress,
+        u.streetAddress,
         u.city,
         u.state,
         u.zipcode,
