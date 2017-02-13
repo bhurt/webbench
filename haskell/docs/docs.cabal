@@ -1,0 +1,36 @@
+name:                docs
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/githubuser/docs#readme
+license:             BSD3
+license-file:        LICENSE
+author:              Author name here
+maintainer:          example@example.com
+copyright:           2017 Author name here
+category:            Web
+build-type:          Simple
+cabal-version:       >=1.10
+extra-source-files:  README.md
+
+executable docs
+  hs-source-dirs:      src
+                        , ../lib
+  main-is:             Main.hs
+  other-modules:       API
+  default-language:    Haskell2010
+  build-depends:       base >= 4.7 && < 5
+                        , blaze-html >= 0.8 && < 0.9
+                        , markdown >= 0.1 && < 0.2
+                        , data-default >= 0.7 && < 0.8
+                        , aeson >= 0.11 && < 0.12
+                        , servant >= 0.8 && < 0.9
+                        , servant-docs >= 0.8 && < 0.9
+                        , servant-js >= 0.8 && < 0.9
+                        , servant-server >= 0.8 && < 0.9
+                        , text >= 1.2 && < 1.3
+                        , aeson-pretty
+                        , servant-swagger
+                        , bytestring >= 0.10 && < 0.11
+                        , swagger2 >= 2.1 && < 2.2
+
