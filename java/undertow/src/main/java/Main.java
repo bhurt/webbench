@@ -2,8 +2,7 @@ import static io.undertow.Undertow.*;
 import static io.undertow.UndertowOptions.*;
 import io.undertow.server.*;
 import io.undertow.server.handlers.*;
-import io.undertow.util.*;
-import java.net.InetAddress;
+
 import javax.sql.DataSource;
 
 public class Main {
@@ -20,21 +19,21 @@ public class Main {
       .start();
   }
 
-  private static <T extends DataSource> T createDataSource() {
+  private static DataSource createDataSource() {
     return new WebbenchDataSource();
   }
 
-  private static <T extends HttpHandler> T createHandler(final DataSource ds) {
+  private static HttpHandler createHandler(final DataSource ds) {
     return new CanonicalPathHandler(createPathHandler(ds));
   }
 
-  private static <T extends HttpHandler> T createPathHandler(final DataSource ds) {
+  private static HttpHandler createPathHandler(final DataSource ds) {
     final PathHandler handler = new PathHandler(createUsersByIdHandler(ds));
     handler.addExactPath("/users", createUsersHandler(ds));
     return handler;
   }
 
-  private static <T extends HttpHandler> T createUsersByIdHandler(final DataSource ds) {
+  private static HttpHandler createUsersByIdHandler(final DataSource ds) {
     final PathTemplateHandler handler = new PathTemplateHandler();
     handler.add("/users/{userId}", createUserIdHandler(ds));
     return handler;

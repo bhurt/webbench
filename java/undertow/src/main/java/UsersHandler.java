@@ -1,19 +1,25 @@
-import io.undertow.server.*;
-import io.undertow.server.handlers.*;
-import io.undertow.util.*;
-import io.undertow.io.*;
-import javax.jdbc.*;
-import java.jdbc.*;
-import static com.google.common.base.Preconditions.*;
-import com.google.common.io.*;
+import io.undertow.io.Receiver;
+import io.undertow.server.HttpHandler;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.util.Headers;
+import io.undertow.util.HttpString;
+import me.doubledutch.lazyjson.LazyArray;
+import me.doubledutch.lazyjson.LazyObject;
+
+import javax.sql.DataSource;
+
+import java.util.Deque;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class UsersHandler implements HttpHandler {
 
   private final DataSource db;
 
-  public UsersHandler(DataSource db) {
-    checkNotNull(db, "DataSource may not be null");
-    this.db = db;
+  public UsersHandler(DataSource ds) {
+    checkNotNull(ds, "DataSource may not be null");
+    this.db = ds;
   }
 
   public void handleRequest(final HttpServerExchange exchange) {
@@ -30,9 +36,9 @@ public class UsersHandler implements HttpHandler {
     }
   }
 
-  private static void handlePost(final HttpServerExchange exchange) {
+  private void handlePost(final HttpServerExchange exchange) {
     checkNotNull(exchange, "Undertow told us that the exchange object would never be null!");
-    this.dispatch(new Post(exchange));
+    exchange.dispatch(new Post(exchange));
   }
 
   private class Post implements Runnable {
@@ -46,13 +52,15 @@ public class UsersHandler implements HttpHandler {
 
     public void run() {
       try {
-        final Map<String,Iterable<String>> params = this.exchange.getQueryParameters();
         final int limit = this.getFirstQueryParamInt("limit");
         final int offset = this.getFirstQueryParamInt("offset");
-        this.exchange.getRequestReceiver().receiveFullString(new Receiver.FullStringCallback() {
-          public void handle(final HttpServerExchange exchange, final String message) {
-            LazyObject obj = new LazyObject(message);
-            LazyObject[] sortings = obj.getArray("items");
+        this.exchange.getRequestReceiver().receiveFullString((exchange, message) -> {
+          LazyObject obj = new LazyObject(message);
+          LazyArray sortingsJson = obj.getJSONArray("items");
+          checkNotNull(sortingsJson, "Could not find 'items': " + obj.toString());
+          final int sortingsLength = sortingsJson.length();
+          Sorting[] sortings = new Sorting[sortingsLength];
+          for(int i = 0; i < sortingsLength; i++) {
 
           }
         });
@@ -65,14 +73,11 @@ public class UsersHandler implements HttpHandler {
 
     private final int getFirstQueryParamInt(String key) {
       checkNotNull(key, "key to retrieve int from may not be null");
-      final Map<String,Iterable<String>> params = this.exchange.getQueryParameters();
+      final Map<String,Deque<String>> params = this.exchange.getQueryParameters();
       checkNotNull(params, "Query parameters are null");
-      final String values = params.get(key);
+      final Deque<String> values = params.get(key);
       checkNotNull(values, "values may not be null");
-      final Iterable<String> iterable = this.exchange.getQueryParams();
-      checkNotNull(iterable, "iterable for " + key + " may not be null");
-      checkState(iterable.hasNext(), "no values for " + key + " in the query parameters");
-      return Integer.parseInt(iterable.next());
+      return Integer.parseInt(values.getFirst());
     }
 
   }
