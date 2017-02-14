@@ -5,7 +5,9 @@ cd $HEREDIR
 HEREDIR=`pwd`
 
 : ${PGHOST:=localhost}
+export PGHOST
 : ${PGPORT:=5432}
+export PGPORT
 : ${PSQL_USER:=webbench}
 : ${PSQL_PASSWORD:=w3bb3nch}
 : ${PSQL_DATABASE:=webbench}
@@ -15,7 +17,7 @@ cd ~postgres
 sudo -u postgres dropdb --if-exists -e -w "$PSQL_DATABASE"
 sudo -u postgres dropuser --if-exists -e -w "$PSQL_USER"
 sudo -u postgres createuser -e -E -w "$PSQL_USER"
-cat "ALTER USER $PSQL_USER WITH PASSWORD '$PSQL_PASSWORD'" | sudo -u postgres psql -a -w
+echo "ALTER USER $PSQL_USER WITH PASSWORD '$PSQL_PASSWORD'" | sudo -u postgres psql -a -w
 sudo -u postgres createdb -e --owner=$PSQL_USER -w "$PSQL_DATABASE"
 
 # Now store the password in a .pgpass file
