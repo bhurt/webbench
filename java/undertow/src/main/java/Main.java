@@ -1,8 +1,10 @@
 import static io.undertow.Undertow.*;
 import static io.undertow.UndertowOptions.*;
 import io.undertow.server.*;
+import io.undertow.server.handlers.*;
 import io.undertow.util.*;
 import java.net.InetAddress;
+import javax.sql.DataSource;
 
 public class Main {
 
@@ -13,15 +15,37 @@ public class Main {
     builder()
       .addHttpListener(port, hostname)
       .setServerOption(ENABLE_HTTP2, true)
-      .setHandler(new HttpHandler() {
-        @Override
-        public void handleRequest(final HttpServerExchange exchange) throws Exception {
-          exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-          exchange.getResponseSender().send("Hello, World!");
-        }
-      })
+      .setHandler(createHandler(createDataSource()))
       .build()
       .start();
+  }
+
+  private static <T extends DataSource> T createDataSource() {
+    return new WebbenchDataSource();
+  }
+
+  private static <T extends HttpHandler> T createHandler(final DataSource ds) {
+    return new CanonicalPathHandler(createPathHandler(ds));
+  }
+
+  private static <T extends HttpHandler> T createPathHandler(final DataSource ds) {
+    final PathHandler handler = new PathHandler(createUsersByIdHandler(ds));
+    handler.addExactPath("/users", createUsersHandler(ds));
+    return handler;
+  }
+
+  private static <T extends HttpHandler> T createUsersByIdHandler(final DataSource ds) {
+    final PathTemplateHandler handler = new PathTemplateHandler();
+    handler.add("/users/{userId}", createUserIdHandler(ds));
+    return handler;
+  }
+
+  private static UsersHandler createUsersHandler(final DataSource ds) {
+    return new UsersHandler(ds);
+  }
+
+  private static UserIdHandler createUserIdHandler(final DataSource ds) {
+    return new UserIdHandler(ds);
   }
 
 }
