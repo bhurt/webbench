@@ -1,8 +1,11 @@
 apply plugin:'wrapper'
 
+allprojects {
+  apply plugin:'idea'
+}
+
 subprojects { 
   apply plugin:'java'
-  apply plugin:'idea'
   apply plugin:'wrapper'
 
   repositories {
