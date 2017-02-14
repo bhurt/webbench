@@ -41,7 +41,7 @@ packages:
 # (e.g., acme-missiles-0.3)
 extra-deps: 
 - http-querystring-1.0
-
+- concurrent-barrier-0.1.2
 
 # Override default flag values for local packages and extra-deps
 flags: {}
