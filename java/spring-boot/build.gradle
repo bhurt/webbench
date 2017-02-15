@@ -1,0 +1,7 @@
+apply plugin:'application'
+
+dependencies {
+  compile group: 'io.undertow', name: 'undertow-core', version: '1.4.8.Final'
+}
+
+mainClassName = "Main"
