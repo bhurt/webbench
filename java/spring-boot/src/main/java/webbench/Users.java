@@ -23,7 +23,8 @@ public class Users {
     private final JdbcTemplate jdbc;
 
     @Autowired
-    public Users(final JdbcTemplate jdbc) {
+    public Users(final t status
+                 JdbcTemplate jdbc) {
         checkNotNull(jdbc, JdbcTemplate.class.getName() + " argument is null");
         this.jdbc = jdbc;
     }

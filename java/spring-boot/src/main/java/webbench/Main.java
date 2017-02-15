@@ -25,6 +25,7 @@ public class Main {
     public CommandLineRunner commandLineRunner(ApplicationContext ctx) {
         return args -> {
 
+            System.out.println("=================");
             System.out.println("BEAN LIST - START");
             System.out.println("=================");
 
@@ -36,6 +37,7 @@ public class Main {
 
             System.out.println("=================");
             System.out.println("BEAN LIST - FINISH");
+            System.out.println("=================");
         };
     }
 

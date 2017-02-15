@@ -30,7 +30,7 @@ public class Main {
 
   private static HttpHandler createPathHandler(final DataSource ds) {
     final PathHandler handler = new PathHandler();
-    handler.addExactPath("/users", createUsersHandler(ds));
+    handler.addExactPath("/rest/v1/users", createUsersHandler(ds));
     return handler;
   }
 
