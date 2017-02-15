@@ -1,7 +1,10 @@
-Java Web Benchmarks
+Web Benchmarks
 =======================
 
-Both of these run the same way -- you provide various environment variables to connect to the database, and then run the
+Running the Benchmarks
+===============================
+
+All of these benchmarks run the same way -- you provide environment variables to configure the database connection, and then run the
 servers, and they provide the endpoints necessary for the benchmarking on port 3000, listening on all interfaces.
 
 Environment Variables
