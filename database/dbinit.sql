@@ -49,7 +49,7 @@ CREATE VIEW userView AS
         u.middleName,
         u.lastName,
         u.title,
-        streetAddress,
+        u.streetAddress,
         u.city,
         u.state,
         u.zipcode,
