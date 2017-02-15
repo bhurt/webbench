@@ -1,4 +1,6 @@
+import java.util.Arrays;
 import java.util.NoSuchElementException;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Sorting {
 
@@ -8,6 +10,16 @@ public class Sorting {
     public Sorting(String field, String direction) {
         this.field = Field.fromJsonKey(field);
         this.direction = Direction.fromJsonKey(direction);
+    }
+
+    public static String sortingsToSql(Sorting[] sortings) {
+        checkNotNull(sortings, "sortings to convert to SQL may not be null");
+        StringBuilder builder = new StringBuilder();
+        Arrays.asList(sortings).forEach(sorting ->
+            builder.append(sorting.field.sqlKey + " " + sorting.direction.sqlKey + ", ")
+        );
+        builder.append(" 1");
+        return builder.toString();
     }
 
     public enum Direction {
@@ -23,13 +35,13 @@ public class Sorting {
         }
 
         public static Direction fromJsonKey(String field) {
-            if(StringUtils.isBlank(field)) return null;
+            checkNotNull(field, "direction value may not be null");
             for(Direction value : values()) {
                 if(value.jsonKey.equalsIgnoreCase(field)) {
                     return value;
                 }
             }
-            throw new NoSuchElementException("Could not find element matching '" + field + "'");
+            throw new NoSuchElementException("Could not find direction element matching '" + field + "'");
         }
 
         public String toSqlKey() {
@@ -55,13 +67,13 @@ public class Sorting {
         }
 
         public static Field fromJsonKey(String field) {
-            if(StringUtils.isBlank(field)) return null;
+            checkNotNull(field, "field value may not be null");
             for(Field value : values()) {
                 if(value.jsonKey.equalsIgnoreCase(field)) {
                     return value;
                 }
             }
-            throw new NoSuchElementException("Could not find element matching '" + field + "'");
+            throw new NoSuchElementException("Could not find field element matching '" + field + "'");
         }
 
         public String toSqlKey() {

@@ -21,7 +21,7 @@ public class WebbenchDataSource extends HikariDataSource {
       try(final Statement stmt = conn.createStatement()) {
         try(final ResultSet rs = stmt.executeQuery("SHOW max_connections")) {
           checkState(rs.next(), "No results from max_connections");
-          return (int)Math.floor(rs.getInt(1) * 0.9);
+          return (int)Math.max(1, Math.floor(rs.getInt(1) * 0.9));
         }
       }
     } catch(RuntimeException re) {

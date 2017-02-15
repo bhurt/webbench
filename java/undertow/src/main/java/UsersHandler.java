@@ -1,4 +1,6 @@
+import io.undertow.io.IoCallback;
 import io.undertow.io.Receiver;
+import io.undertow.io.Sender;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
@@ -8,10 +10,15 @@ import me.doubledutch.lazyjson.LazyObject;
 
 import javax.sql.DataSource;
 
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Deque;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 public class UsersHandler implements HttpHandler {
 
@@ -52,16 +59,34 @@ public class UsersHandler implements HttpHandler {
 
     public void run() {
       try {
-        final int limit = this.getFirstQueryParamInt("limit");
-        final int offset = this.getFirstQueryParamInt("offset");
         this.exchange.getRequestReceiver().receiveFullString((exchange, message) -> {
-          LazyObject obj = new LazyObject(message);
-          LazyArray sortingsJson = obj.getJSONArray("items");
-          checkNotNull(sortingsJson, "Could not find 'items': " + obj.toString());
-          final int sortingsLength = sortingsJson.length();
-          Sorting[] sortings = new Sorting[sortingsLength];
-          for(int i = 0; i < sortingsLength; i++) {
-
+          final UserSort sorting = new UserSort(exchange.getQueryParameters(), message);
+          try(final Connection conn = db.getConnection()) {
+            try(final Statement stmt = conn.createStatement()) {
+              final String sql =
+                new StringBuilder("SELECT * FROM userView ")
+                  .append("ORDER BY ").append(Sorting.sortingsToSql(sorting.sortings)).append(' ')
+                  .append("LIMIT ").append(sorting.limit).append(' ')
+                  .append("OFFSET ").append(sorting.offset).append(' ')
+                  .toString();
+              try(final ResultSet rs = stmt.executeQuery(sql)) {
+                try(SenderCalls sender = new SenderCalls(exchange)) {
+                  sender.send("[");
+                  while (rs.next()) {
+                    String json = UserReader.toJson(rs);
+                    sender.send(json);
+                    if (!rs.isLast()) {
+                      sender.send(",");
+                    }
+                  }
+                  sender.send("]");
+                }
+              }
+            }
+          } catch(RuntimeException re) {
+            throw re;
+          } catch(Exception e) {
+            throw new RuntimeException(e);
           }
         });
       } catch(RuntimeException re) {
@@ -71,19 +96,10 @@ public class UsersHandler implements HttpHandler {
       }
     }
 
-    private final int getFirstQueryParamInt(String key) {
-      checkNotNull(key, "key to retrieve int from may not be null");
-      final Map<String,Deque<String>> params = this.exchange.getQueryParameters();
-      checkNotNull(params, "Query parameters are null");
-      final Deque<String> values = params.get(key);
-      checkNotNull(values, "values may not be null");
-      return Integer.parseInt(values.getFirst());
-    }
-
   }
 
-  private static void handleGet(final HttpServerExchange exchange) {
-    this.dispatch(new Get(exchange));
+  private void handleGet(final HttpServerExchange exchange) {
+    exchange.dispatch(new Get(exchange));
   }
 
   private class Get implements Runnable {
@@ -98,11 +114,10 @@ public class UsersHandler implements HttpHandler {
     public void run() {
       try(final Connection conn = db.getConnection())  {
         try(final Statement stmt = conn.createStatement()) {
-          try(final ResultSet rs = conn.executeQuery("SELECT COUNT(*) FROM usersview")) {
-            checkState(rs.getNext(), "No results to our call");
-            final int result = rs.getInt(1);
+          try(final ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS 'cnt' FROM userView")) {
+            checkState(rs.next(), "No results to our call");
+            final int result = rs.getInt("cnt");
             exchange.getResponseSender().send(Integer.toString(result));
-            exchange.endExchange();
           }
         }
       } catch(RuntimeException re) {
@@ -119,7 +134,7 @@ public class UsersHandler implements HttpHandler {
     checkNotNull(methodHttpString, "Request doesn't have a method?");
     final String method = methodHttpString.toString();
     checkNotNull(method, "Method does not have a string representation");
-    final String methodUpper = method.toUpper();
+    final String methodUpper = method.toUpperCase();
     return methodUpper;
   }
 

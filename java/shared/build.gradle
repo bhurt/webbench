@@ -2,5 +2,6 @@ dependencies {
   compile group: 'com.google.guava', name: 'guava', version: '21.0'
   compile group: 'org.postgresql', name: 'postgresql', version: '9.4.1212'
   compile group: 'com.zaxxer', name: 'HikariCP', version: '2.6.0'
-  compile group: 'me.doubledutch', name:'lazyjson', version: '1.2.6'
+  compile group: 'me.doubledutch', name:'lazyjson', version: '1.2.6' // Only parses, but crazy fast
+  compile group: 'io.fastjson', name: 'boon', version: '0.34' // We use this for serialization
 }
