@@ -1,3 +1,5 @@
+package webbench;
+
 import org.postgresql.ds.PGSimpleDataSource;
 
 public class WebbenchBaseDataSource extends PGSimpleDataSource {

@@ -2,6 +2,7 @@ import static io.undertow.Undertow.*;
 import static io.undertow.UndertowOptions.*;
 import io.undertow.server.*;
 import io.undertow.server.handlers.*;
+import webbench.WebbenchDataSource;
 
 import javax.sql.DataSource;
 

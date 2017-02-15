@@ -1,3 +1,5 @@
+package webbench;
+
 import org.boon.json.JsonFactory;
 import org.boon.json.JsonSerializer;
 
@@ -13,7 +15,19 @@ public class UserReader {
     private static final String[] EMPTY_STRING_ARRAY = new String[0];
     private static final JsonSerializer JSON = JsonFactory.create().serializer();
 
-    public static String toJson(ResultSet rs) throws Exception {
+    public static List<User> toUsers(ResultSet rs) throws Exception {
+        checkNotNull(rs, "result set to read from may not be null");
+        checkState(!rs.isClosed(), "result set to be read from is closed");
+        checkState(!rs.isAfterLast(), "result set to be read from is after the last record");
+
+        List<User> users = new ArrayList<>();
+        while(rs.next()) {
+            users.add(toUser(rs));
+        }
+        return users;
+    }
+
+    public static User toUser(ResultSet rs) throws Exception {
         checkNotNull(rs, "result set to read from may not be null");
         checkState(!rs.isClosed(), "result set to be read from is closed");
         checkState(!rs.isAfterLast(), "result set to be read from is after the last record");
@@ -32,6 +46,16 @@ public class UserReader {
         user.age = rs.getInt("age");
         user.interests = readInterests(rs.getArray("interests").getResultSet());
 
+        return user;
+    }
+
+    public static String toUserJson(ResultSet rs) throws Exception {
+        checkNotNull(rs, "result set to read from may not be null");
+        checkState(!rs.isClosed(), "result set to be read from is closed");
+        checkState(!rs.isAfterLast(), "result set to be read from is after the last record");
+
+        User user = toUser(rs);
+
         return JSON.serialize(user).toStringAndRecycle();
     }
 
@@ -46,14 +70,6 @@ public class UserReader {
             interests.add(rs.getString(1));
         }
         return interests.toArray(EMPTY_STRING_ARRAY);
-    }
-
-    private static final class User {
-
-        public int id, age;
-        public String firstName, middleName, lastName, title, streetAddress, city, state, zipcode, phoneNumber;
-        public String[] interests;
-
     }
 
 }

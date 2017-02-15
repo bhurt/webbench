@@ -1,3 +1,5 @@
+package webbench;
+
 import com.zaxxer.hikari.HikariDataSource;
 
 import java.sql.Connection;

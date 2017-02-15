@@ -1,3 +1,5 @@
+package webbench;
+
 import me.doubledutch.lazyjson.LazyArray;
 import me.doubledutch.lazyjson.LazyObject;
 

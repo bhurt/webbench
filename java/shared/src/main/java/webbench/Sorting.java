@@ -1,15 +1,25 @@
+package webbench;
+
 import java.util.Arrays;
 import java.util.NoSuchElementException;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Sorting {
 
-    public final Field field;
-    public final Direction direction;
+    public volatile Field field;
+    public volatile Direction direction;
 
-    public Sorting(String field, String direction) {
-        this.field = Field.fromJsonKey(field);
-        this.direction = Direction.fromJsonKey(direction);
+    public Sorting(String sortBy, String sortDir) {
+        this.setSortBy(sortBy);
+        this.setSortDir(sortDir);
+    }
+
+    public void setSortBy(String sortBy) {
+        this.field = Field.fromJsonKey(sortBy);
+    }
+
+    public void setSortDir(String sortDir) {
+        this.direction = Direction.fromJsonKey(sortDir);
     }
 
     public static String sortingsToSql(Sorting[] sortings) {

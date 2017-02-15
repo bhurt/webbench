@@ -1,3 +1,5 @@
+package webbench;
+
 import java.util.function.Function;
 
 public class EnvUtils {

@@ -1,21 +1,16 @@
-import io.undertow.io.IoCallback;
-import io.undertow.io.Receiver;
-import io.undertow.io.Sender;
 import io.undertow.server.HttpHandler;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.Headers;
 import io.undertow.util.HttpString;
-import me.doubledutch.lazyjson.LazyArray;
-import me.doubledutch.lazyjson.LazyObject;
+import webbench.Sorting;
+import webbench.UserReader;
+import webbench.UserSort;
 
 import javax.sql.DataSource;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.Deque;
-import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -73,7 +68,7 @@ public class UsersHandler implements HttpHandler {
                 try(SenderCalls sender = new SenderCalls(exchange)) {
                   sender.send("[");
                   while (rs.next()) {
-                    String json = UserReader.toJson(rs);
+                    String json = UserReader.toUserJson(rs);
                     sender.send(json);
                     if (!rs.isLast()) {
                       sender.send(",");
@@ -114,7 +109,7 @@ public class UsersHandler implements HttpHandler {
     public void run() {
       try(final Connection conn = db.getConnection())  {
         try(final Statement stmt = conn.createStatement()) {
-          try(final ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS 'cnt' FROM userView")) {
+          try(final ResultSet rs = stmt.executeQuery("SELECT COUNT(*) AS \"cnt\" FROM userView")) {
             checkState(rs.next(), "No results to our call");
             final int result = rs.getInt("cnt");
             exchange.getResponseSender().send(Integer.toString(result));

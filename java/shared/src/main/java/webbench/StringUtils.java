@@ -1,3 +1,5 @@
+package webbench;
+
 public class StringUtils {
 
     public static boolean isBlank(String s) {
