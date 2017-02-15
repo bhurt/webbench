@@ -1,0 +1,21 @@
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath(group: 'org.springframework.boot', name: 'spring-boot-gradle-plugin', version: '1.5.1.RELEASE')
+  }
+}
+
+apply plugin:'application'
+apply plugin: 'org.springframework.boot'
+
+dependencies {
+    compile("org.springframework.boot:spring-boot-starter-web") 
+    compile group: 'org.springframework.boot', name: 'spring-boot-starter-jdbc'
+}
+
+jar {
+  baseName = "webbench-spring-boot"
+}
+

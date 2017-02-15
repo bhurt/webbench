@@ -23,18 +23,18 @@ CREATE TABLE IF NOT EXISTS userInterests (
 
 CREATE VIEW userView AS
     SELECT
-        u.id,
-        u.firstName,
-        u.middleName,
-        u.lastName,
-        u.title,
-        u.streetAddress,
-        u.city,
-        u.state,
-        u.zipcode,
-        u.phoneNumber,
-        u.age,
-        array_agg(i.name) as interests
+        u.id AS "id",
+        u.firstName AS "firstName",
+        u.middleName AS "middleName",
+        u.lastName AS "lastName",
+        u.title AS "title",
+        streetAddress AS "streetAddress",
+        u.city AS "city",
+        u.state AS "state",
+        u.zipcode AS "zipcode",
+        u.phoneNumber AS "phoneNumber",
+        u.age AS "age",
+        array_agg(i.name) AS "interests"
     FROM
             users AS u
         LEFT JOIN
