@@ -28,23 +28,13 @@ public class Main {
   }
 
   private static HttpHandler createPathHandler(final DataSource ds) {
-    final PathHandler handler = new PathHandler(createUsersByIdHandler(ds));
+    final PathHandler handler = new PathHandler();
     handler.addExactPath("/users", createUsersHandler(ds));
-    return handler;
-  }
-
-  private static HttpHandler createUsersByIdHandler(final DataSource ds) {
-    final PathTemplateHandler handler = new PathTemplateHandler();
-    handler.add("/users/{userId}", createUserIdHandler(ds));
     return handler;
   }
 
   private static UsersHandler createUsersHandler(final DataSource ds) {
     return new UsersHandler(ds);
-  }
-
-  private static UserIdHandler createUserIdHandler(final DataSource ds) {
-    return new UserIdHandler(ds);
   }
 
 }
