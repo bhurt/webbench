@@ -1,8 +1,10 @@
 import static io.undertow.Undertow.*;
 import static io.undertow.UndertowOptions.*;
 import io.undertow.server.*;
-import io.undertow.util.*;
-import java.net.InetAddress;
+import io.undertow.server.handlers.*;
+import webbench.WebbenchDataSource;
+
+import javax.sql.DataSource;
 
 public class Main {
 
@@ -13,15 +15,27 @@ public class Main {
     builder()
       .addHttpListener(port, hostname)
       .setServerOption(ENABLE_HTTP2, true)
-      .setHandler(new HttpHandler() {
-        @Override
-        public void handleRequest(final HttpServerExchange exchange) throws Exception {
-          exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-          exchange.getResponseSender().send("Hello, World!");
-        }
-      })
+      .setHandler(createHandler(createDataSource()))
       .build()
       .start();
+  }
+
+  private static DataSource createDataSource() {
+    return new WebbenchDataSource();
+  }
+
+  private static HttpHandler createHandler(final DataSource ds) {
+    return new CanonicalPathHandler(createPathHandler(ds));
+  }
+
+  private static HttpHandler createPathHandler(final DataSource ds) {
+    final PathHandler handler = new PathHandler();
+    handler.addExactPath("/rest/v1/users", createUsersHandler(ds));
+    return handler;
+  }
+
+  private static UsersHandler createUsersHandler(final DataSource ds) {
+    return new UsersHandler(ds);
   }
 
 }

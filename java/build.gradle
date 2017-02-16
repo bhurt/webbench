@@ -1,0 +1,23 @@
+apply plugin:'wrapper'
+
+allprojects {
+  apply plugin:'idea'
+}
+
+subprojects { 
+  apply plugin:'java'
+
+  repositories {
+    mavenLocal()
+    mavenCentral()
+  }
+  if(it.name != "shared") {
+    dependencies {
+      compile project(':shared')
+    }
+  }
+
+  sourceCompatibility = 1.8
+  targetCompatibility = 1.8
+
+}

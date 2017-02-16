@@ -59,7 +59,8 @@ module API where
     type UsersAPI = "users" :> QueryParam "limit" Int
                             :> QueryParam "offset" Int
                             :> ReqBody '[JSON] [Sorting]
-                            :> Get '[JSON] [User]
+                            :> Post '[JSON] [User]
+                    :<|> "users" :> Get '[JSON] Int64
                     :<|> "users" :> Capture "userId" Int64
                                     :> Get '[JSON] User
 
