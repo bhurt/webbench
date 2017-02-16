@@ -3,14 +3,13 @@ module Main where
 import System.Environment ( getArgs )
 import Control.Concurrent ( forkIO, threadDelay )
 import Control.Concurrent.Async ( async, Async, waitAny, waitEither, uninterruptibleCancel )
-import Webbench.Client ( startClient, ClientDone )
+import Webbench.Client ( setupClients, cleanupClients, startClient, ClientDone, ClientAsync )
 import Webbench.Reporter ( startReporter, handleClientDone, stopReporter )
 import Data.Time.Units ( TimeUnit, Minute, Second, toMicroseconds )
 import Data.List ( delete )
 
 newtype TimeoutReached = TimeoutReached () deriving (Read,Show,Ord,Eq)
 type TimerAsync = Async TimeoutReached
-type ClientAsync = Async ClientDone
 type ClientResult = Either TimeoutReached ClientDone
 type ResultAsync = Async ClientResult
 type ClientCount = Int
@@ -21,8 +20,10 @@ main = do
   (arg1 : arg2 : _) <- getArgs
   let clientCount = read arg1
   let timeout = (read arg2)::Second
-  runWarmUp clientCount
-  runTest clientCount timeout
+  clientConfig <- setupClients
+  runWarmUp clientCount clientConfig
+  runTest clientCount clientConfig timeout
+  cleanupClients clientConfig
 
 runTest :: TimeUnit t => ClientCount -> t -> IO ()
 runTest count timeout = do
@@ -85,9 +86,7 @@ createClientList count timer =
     timeoutList = map timeout asyncList
     timeout = timeoutClient timer
     asyncList :: [IO ClientAsync]
-    asyncList = map async basicList
-    basicList :: [IO ClientDone]
-    basicList = replicate count startClient
+    asyncList = replicate count startClient
 
 createTimeoutAsync :: TimeUnit t => t -> IO TimerAsync
 createTimeoutAsync timeout = async $ do
