@@ -122,7 +122,7 @@ module Main where
                 putStrLn usage
             else
                 do
-                    flag <- newTVarIO False
+                    flag <- newTVarIO True
                     request' <- parseRequest (url r)
                     let request = request' {
                                     path = "/rest/v1/users",
@@ -142,7 +142,7 @@ module Main where
                                 <*> wait a)
                 | otherwise = do
                     threadDelay ((nsecs + 4) * 1000000)
-                    atomically $ writeTVar flag True
+                    atomically $ writeTVar flag False
                     return []
             getCount req = do
                 manager <- newManager defaultManagerSettings
