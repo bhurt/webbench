@@ -76,6 +76,8 @@ module Main where
 
     main :: IO ()
     main = do
+        Prelude.writeFile "./webbench.md" $
+            (markdown . docsWithIntros intros . pretty) api
         Prelude.writeFile "./webbench.html" $
             (ZText.unpack . renderHtml . Markdown.markdown def . ZText.pack
                 . markdown . docsWithIntros intros . pretty) api
