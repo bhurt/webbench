@@ -4,7 +4,8 @@ Web Server Benchmarks of Real Business Value
 The goal of these benchmarks is to get away from the hyper-tuned microbenchmarks that so fascinate certain geeks, and instead measure
 a real-world usage scenario. Specifically, the question we are pursuing is:
 
-> How financially expensive is it to run a REST API web server which wraps a database with production levels of data and load?
+> For various web development platforms, how financially expensive is it to run a REST API web server
+> which wraps a database with production levels of data and load?
 
 The way that we break this down is as follows:
 
