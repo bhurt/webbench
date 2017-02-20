@@ -16,6 +16,7 @@ module Main where
     import Data.Vector (Vector)
     import Data.Foldable (toList)
     import Data.String (fromString)
+    import Data.Maybe (catMaybes)
 
     instance FromRow Name where
         fromRow = Name <$> field <*> field <*> field <*> field
@@ -27,7 +28,8 @@ module Main where
         fromRow = User <$> field <*> fromRow <*> fromRow <*> field
                         <*> field <*> interests
             where
-                interests = toList <$> (field :: RowParser (Vector Text))
+                interests = fixup <$> (field :: RowParser (Vector (Maybe Text)))
+                fixup = catMaybes . toList
 
     postUsers :: Pool Connection -> Maybe Int -> Maybe Int -> [Sorting]
                     -> Handler [User]
@@ -49,12 +51,12 @@ module Main where
                                         ++ columnName (sortBy x)
                                         ++ direction (sortDir x)
                                         ++ ordering True xs
-            columnName FirstName  = " firstname"
-            columnName LastName   = " lastname"
-            columnName City       = " city"
-            columnName State      = " state"
-            columnName Zipcode    = " zipcode"
-            columnName Age        = " age"
+            columnName FirstName  = " \"firstName\""
+            columnName LastName   = " \"lastName\""
+            columnName City       = " \"city\""
+            columnName State      = " \"state\""
+            columnName Zipcode    = " \"zipcode\""
+            columnName Age        = " \"age\""
             direction Ascending   = " ASC"
             direction Descending  = " DESC"
             limitClause (Just n)  = " LIMIT " ++ show n
