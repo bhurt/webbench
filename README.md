@@ -63,6 +63,7 @@ Constraints and Contexts for Servers
     connections per stripe should be 5000.
   * If it is possible to configure an idle timeout in the pool, that timeout should be set to 1 minute.
 * Servers must implement protections against SQL injection attacks.
+* Servers must implement the swagger spec found at the sibling file to this document, `webbench.swagger.json`.
 
 Server Configuration
 =====================
