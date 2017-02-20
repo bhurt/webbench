@@ -87,7 +87,9 @@ module Main where
     serverProxy = Proxy
 
     server :: Pool Connection -> Server API
-    server pool = postUsers pool :<|> getUserCount pool :<|> getAUser pool
+    server pool = return "" :<|> postUsers pool
+                            :<|> getUserCount pool
+                            :<|> getAUser pool
 
     getEnvDef :: String -> String -> IO String
     getEnvDef name deflt = do

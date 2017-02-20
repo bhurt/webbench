@@ -54,7 +54,9 @@ module API where
         sortDir :: Direction
     } deriving (Show, Read, Ord, Eq, Generic, Typeable)
         
-    type API = "rest" :> "v1" :> UsersAPI
+    type API = 
+        Get '[JSON] Text
+        :<|> "rest" :> "v1" :> UsersAPI
 
     type UsersAPI = "users" :> QueryParam "limit" Int
                             :> QueryParam "offset" Int
