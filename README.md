@@ -26,12 +26,15 @@ The way that we break this down is as follows:
   * The other extreme test will be using the compute-optimized `c4.xlarge` as the underlying image:
   4 CPUs, 16 [ECU](https://aws.amazon.com/ec2/faqs/#What_is_an_EC2_Compute_Unit_and_why_did_you_introduce_it), and 7.5GiB of RAM.
   They run USD$0.10 per hour (that's 17 `t2.nano` instances per hour). We will test each implementation utilizing just one of
-  these virtual machines, but with 4 instances of the server implementation on that machine. This gives implementations which could
-  barely run under `t2.nano` have their chance to shine, too. We will test each implementation at 100000 concurrent users.
+  these virtual machines. Each virtual machine will run 4 primary instances of the server implementation and 2 instances
+  as hot backup. This reflects a beefy single-server production environment and gives implementations which could barely
+  run under `t2.nano` have their chance to shine, too. We will test each implementation at 100000 concurrent users.
   * We will then set up an Auto-Scaling Group of the `t2.nano` servers, and see how many servers the Auto-Scaling Group spins
   up while under this load, along with the performance characteristics of that Auto-Scaling Group from the client's perspective,
-  along with the cost of those Auto-Scaling Groups from a business perspective.  (If you would like to see this test repeated
+  along with the cost of those Auto-Scaling Groups from a business perspective.
+  (If you would like to see this test repeated
   with the `c4.xlarge` instances, please contact [Sapiens Development](http://sapiensdev.com) with your sponshorship offer.)
+
 
 Constraints and Contexts for Servers
 ======================================
@@ -59,6 +62,7 @@ Constraints and Contexts for Servers
   * If the pool requires you to specify the number of stripes, then the number of stripes should be 5, and the maximum number of
     connections per stripe should be 5000.
   * If it is possible to configure an idle timeout in the pool, that timeout should be set to 1 minute.
+* Servers must implement protections against SQL injection attacks.
 
 Server Configuration
 =====================
@@ -94,6 +98,12 @@ We are looking for the following implementations:
   * (We don't want Flask, because the other two seem to reliably outperform it.)
 * Go
   * ??? (What do Go folks use for REST API webservers?)
+
+We are also looking to implement the following extensions:
+
+* Improved scripting of executing tests, including building up and tearing down test environments.
+* SQL injection attacks launched by the client code before the tests are executed.
+
 
 Inspiration
 ==============
