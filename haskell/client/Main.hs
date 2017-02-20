@@ -8,11 +8,10 @@ module Main where
     import Control.Concurrent.STM
     import Control.Concurrent (threadDelay)
     import Control.DeepSeq
-    import Control.Exception (evaluate)
-    import Data.Aeson (encode, decode')
+    import Control.Exception (evaluate, SomeException, displayException, catch)
+    import Data.Aeson (encode, eitherDecode, decode')
     import Data.ByteString.Lazy (ByteString)
     import Data.Default
-    import Data.Maybe (isJust)
     import Network.HTTP.Client
     import Network.HTTP.Types.Method
     import Network.HTTP.Types.Status (statusCode)
@@ -25,12 +24,36 @@ module Main where
 
     import API
 
+    data Result =
+        Success
+        | BadStatus Int
+        | Failure String
+
+    instance NFData Result where
+        rnf Success = ()
+        rnf (BadStatus x) = rnf x `seq` ()
+        rnf (Failure x) = rnf x `seq` ()
+
+    rnfTimeSpec :: TimeSpec -> ()
+    rnfTimeSpec ts = rnf (sec ts) `seq` rnf (nsec ts) `seq` ()
+
     data Call = Call {
         start :: TimeSpec,
         end :: TimeSpec,
-        succeeded :: Bool
+        succeeded :: Result
     } 
 
+    instance NFData Call where
+        rnf call = rnfTimeSpec (start call) `seq` rnfTimeSpec (end call)
+                    `seq` rnf (succeeded call) `seq` ()
+
+    showTimeSpec :: TimeSpec -> String
+    showTimeSpec ts = show (sec ts) ++ (if nsec ts == 0 then "" else frac)
+        where
+            frac = '.' : replicate (9 - length ns) '0' ++ ns
+            ns = show (nsec ts)
+
+    
     randomSelect :: (Enum a, RandomGen g) => (a, a) -> g -> (a, g)
     randomSelect (lb, ub) g = (toEnum i, g2)
         where
@@ -39,26 +62,42 @@ module Main where
     randomBounded :: (Enum a, Bounded a, RandomGen g) => g -> (a, g)
     randomBounded = randomSelect (minBound, maxBound)
 
-    clientThread :: IO () -> Int -> Bool -> Request -> TVar Bool -> StdGen
-                        -> IO [ Call ]
-    clientThread barrier userCnt doDeepCheck basereq flag rgen = do
+    data ClientState = ClientState {
+        barrier :: IO (),
+        userCnt :: Int,
+        doDeepCheck :: Bool,
+        basereq :: Request,
+        flag :: TVar Bool }
+
+    clientThread :: ClientState -> StdGen -> IO [ Call ]
+    clientThread cstate rgen = do
             manager <- newManager defaultManagerSettings
-            barrier
+            (barrier cstate)
             go manager rgen []
         where
             go manager r res = do
                 let (r2, req) = makeReq r
                 s <- getTime Monotonic
-                resp <- httpLbs req manager
-                _ <- evaluate $ force $ responseBody resp
+                succ1 <- catch (doCall manager req) handler
                 e <- getTime Monotonic
-                let c = Call s e (checkResp resp)
-                cont <- readTVarIO flag
+                let succ2 = case succ1 of
+                                Left succ3 -> succ3
+                                Right resp -> checkResp resp
+                let c' = Call s e succ2
+                c <- evaluate $ force c'
+                cont <- readTVarIO (flag cstate)
                 if cont then
                     go manager r2 (c:res)
                 else
                     return (c:res)
-            makeReq rand = (rand4, basereq {
+            doCall manager req = do
+                resp <- httpLbs req manager
+                _ <- evaluate $ force $ responseBody resp
+                return $ Right resp
+            handler :: SomeException -> IO (Either Result (Response ByteString))
+            handler e = return . Left . Failure . ("Threw exception:" ++)
+                            . displayException $ e
+            makeReq rand = (rand4, (basereq cstate) {
                                         queryString = qstring,
                                         requestBody = reqbody })
                 where
@@ -68,7 +107,8 @@ module Main where
                                     ("limit", Char8.pack (show limit)),
                                     ("offset", Char8.pack (show offset)) ]
                     (limit, rand1) = randomR (10, 100::Int) rand
-                    (offset, rand2) = randomR (0, (userCnt - limit)) rand1
+                    (offset, rand2) = randomR (0, ((userCnt cstate) - limit))
+                                        rand1
                     (numsorts, rand3) = randomR (1, 3::Int) rand2
                     (sorts, rand4) = makeSorts numsorts rand3
                     makeSorts n r
@@ -79,10 +119,17 @@ module Main where
                             let (tl, r4) = makeSorts (n-1) r3 in
                             ((Sorting sb dir : tl), r4)
             checkResp resp =
-                ((statusCode (responseStatus resp)) == 200)
-                && (not doDeepCheck || (isJust (decodeBody resp)))
-            decodeBody :: Response ByteString -> Maybe [ User ]
-            decodeBody = decode' . responseBody
+                let s = (statusCode . responseStatus) resp in
+                if (s /= 200) then
+                    BadStatus s
+                else if (doDeepCheck cstate) then
+                    case decodeBody resp of
+                        Left err -> Failure $ "Decode failed: " ++ err
+                        Right _ -> Success
+                else
+                    Success
+            decodeBody :: Response ByteString -> Either String [ User ]
+            decodeBody = eitherDecode . responseBody
 
     data Arg = Arg {
         url :: String,
@@ -122,27 +169,28 @@ module Main where
                 putStrLn usage
             else
                 do
-                    flag <- newTVarIO True
+                    cflag <- newTVarIO True
                     request' <- parseRequest (url r)
                     let request = request' {
                                     path = "/rest/v1/users",
                                     method = methodPost }
                     cnt <- getCount request'
-                    barrier <- latchBarrier (numThreads r)
-                    results <- spawn_clients (numThreads r) (numSecs r) flag 0
-                                (clientThread barrier cnt (deepcheck r)
-                                    request flag)
+                    cbar <- latchBarrier (numThreads r)
+                    let cstate = ClientState cbar cnt (deepcheck r)
+                                                request cflag
+                    results <- spawn_clients (numThreads r) (numSecs r) 0
+                                cstate
                     putStrLn $ "Did " ++ show (length results) ++ " calls."
         where
-            spawn_clients n nsecs flag g act
+            spawn_clients n nsecs g cstate
                 | n > 0 =
-                    withAsync (act (mkStdGen g))
+                    withAsync (clientThread cstate (mkStdGen g))
                         (\a -> (++)
-                                <$> spawn_clients (n-1) nsecs flag (g + 1) act
+                                <$> spawn_clients (n-1) nsecs (g + 1) cstate
                                 <*> wait a)
                 | otherwise = do
-                    threadDelay ((nsecs + 4) * 1000000)
-                    atomically $ writeTVar flag False
+                    threadDelay (nsecs * 1000000)
+                    atomically $ writeTVar (flag cstate) False
                     return []
             getCount req = do
                 manager <- newManager defaultManagerSettings
