@@ -13,6 +13,7 @@ module Main where
     import Data.ByteString.Lazy (ByteString)
     import Data.Default
     import Network.HTTP.Client
+    import Network.HTTP.Types.Header
     import Network.HTTP.Types.Method
     import Network.HTTP.Types.Status (statusCode)
     import qualified Data.ByteString.Char8 as Char8
@@ -20,6 +21,7 @@ module Main where
     import System.Clock
     import System.Console.GetOpt
     import System.Environment
+    import System.IO
     import System.Random
 
     import API
@@ -73,26 +75,27 @@ module Main where
     writerThread :: FilePath -> ClientState -> TVar Bool -> IO ()
     writerThread filename cstate allDone = withFile filename WriteMode go
         where
-            go handle =
+            go handle = do
                 r <- atomically $ getCalls (writeChannel cstate)
                 case r of
                     Nothing -> return ()
                     Just cs -> do
-                        mapM_ writeCall cs
+                        mapM_ (writeCall handle) cs
                         go handle
             getCalls chan = do
                 cs <- readTVar chan
-                if (cs == []) then
-                    f <- readTVar allDone
-                    if f then
-                        return $ Nothing
-                    else
-                        retry
+                if (null cs) then
+                    do
+                        f <- readTVar allDone
+                        if f then
+                            return $ Nothing
+                        else
+                            retry
                 else
                     do
                         writeTVar chan []
-                        return $ concat $ reverse cs
-            writeCall = hPutStrLn . showCall
+                        return $ Just $ concat $ reverse cs
+            writeCall handle = hPutStrLn handle . showCall
             showCall call = showTimeSpec (start call) ++ ","
                             ++ showTimeSpec (end call)
                             ++ showResult (succeeded call)
@@ -121,11 +124,16 @@ module Main where
                 if cont then
                     if n == 0 then
                         do
-                            
+                            atomically $ modifyTVar (writeChannel cstate)
+                                            ((c:res):)
+                            go manager r2 (n-1) []
                     else
                         go manager r2 (n-1) (c:res)
                 else
-                    return (c:res)
+                    do
+                        atomically $ modifyTVar (writeChannel cstate)
+                            ((c:res):)
+                        return ()
             doCall manager req = do
                 resp <- httpLbs req manager
                 _ <- evaluate $ force $ responseBody resp
@@ -172,11 +180,14 @@ module Main where
         deepcheck :: Bool,
         numSecs :: Int,
         numThreads :: Int,
-        help :: Bool }
+        help :: Bool,
+        filepath :: FilePath,
+        maxoffset :: Maybe Int }
         deriving (Show, Read, Ord, Eq)
 
     instance Default Arg where
         def = Arg "http://localhost:3000/" False 1000 1 False
+                    "./webbench-client.data" Nothing
 
     optDesc :: [ OptDescr (Arg -> Arg) ]
     optDesc = [
@@ -191,7 +202,12 @@ module Main where
             (ReqArg (\s a -> a { numThreads = read s }) "INT")
             "Number of concurrent clients to run",
         Option ['h', '?'] ["help"] (NoArg (\a -> a { help = True }))
-            "Print out help message" ]
+            "Print out help message",
+        Option ['f'] ["file"] (ReqArg (\s a -> a { filepath = s}) "FILE")
+            "File to write the data to",
+        Option ['m'] ["maxoffset"]
+            (ReqArg (\s a -> a { maxoffset = Just (read s)}) "INT")
+            "Maximum offset to generate (useful for debugging)" ]
 
     usage :: String
     usage = usageInfo "The WebBench client program." optDesc
@@ -206,28 +222,44 @@ module Main where
             else
                 do
                     cflag <- newTVarIO True
+                    chan <- newTVarIO []
                     request' <- parseRequest (url r)
                     let request = request' {
                                     path = "/rest/v1/users",
-                                    method = methodPost }
-                    cnt <- getCount request'
+                                    method = methodPost,
+                                    requestHeaders =
+                                        [ (hContentType, "application/json"),
+                                          (hAccept, "application/json") ] }
+                    cnt' <- getCount request'
+                    let cnt = case (maxoffset r) of
+                                Nothing -> cnt'
+                                Just c -> min c cnt'
                     cbar <- latchBarrier (numThreads r)
                     let cstate = ClientState cbar cnt (deepcheck r)
-                                                request cflag
-                    results <- spawn_clients (numThreads r) (numSecs r) 0
-                                cstate
-                    putStrLn $ "Did " ++ show (length results) ++ " calls."
+                                                request cflag chan
+                    _ <- spawn_writer (filepath r) (numThreads r)
+                                (numSecs r) cstate
+                    putStrLn "Done."
         where
+            spawn_writer pth n nsecs cstate = do
+                doneFlag <- newTVarIO False
+                withAsync (writerThread pth cstate doneFlag)
+                    (\a -> do
+                        r <- spawn_clients n nsecs 0 cstate
+                        atomically $ writeTVar doneFlag True
+                        wait a
+                        return r)
             spawn_clients n nsecs g cstate
                 | n > 0 =
                     withAsync (clientThread cstate (mkStdGen g))
-                        (\a -> (++)
-                                <$> spawn_clients (n-1) nsecs (g + 1) cstate
-                                <*> wait a)
+                        (\a -> do
+                            spawn_clients (n-1) nsecs (g + 1) cstate
+                            wait a
+                            return ())
                 | otherwise = do
                     threadDelay (nsecs * 1000000)
                     atomically $ writeTVar (flag cstate) False
-                    return []
+                    return ()
             getCount req = do
                 manager <- newManager defaultManagerSettings
                 resp <- httpLbs (req { path = "/rest/v1/users",
