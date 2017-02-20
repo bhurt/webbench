@@ -56,6 +56,8 @@ Constraints and Contexts for Servers
 * Database communication and pooling on the servers must be done using an open source, commercially accessible library. The
   database pool should use the default configuration, with the following exceptions:
   * The database pool should be configured to have a maximum of 25000 connections in the pool.
+  * If the pool requires you to specify the number of stripes, then the number of stripes should be 5, and the maximum number of
+    connections per stripe should be 5000.
   * If it is possible to configure an idle timeout in the pool, that timeout should be set to 1 minute.
 
 Server Configuration
