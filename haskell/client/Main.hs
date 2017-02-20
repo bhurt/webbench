@@ -67,15 +67,47 @@ module Main where
         userCnt :: Int,
         doDeepCheck :: Bool,
         basereq :: Request,
-        flag :: TVar Bool }
+        flag :: TVar Bool,
+        writeChannel :: TVar [[Call]] }
 
-    clientThread :: ClientState -> StdGen -> IO [ Call ]
+    writerThread :: FilePath -> ClientState -> TVar Bool -> IO ()
+    writerThread filename cstate allDone = withFile filename WriteMode go
+        where
+            go handle =
+                r <- atomically $ getCalls (writeChannel cstate)
+                case r of
+                    Nothing -> return ()
+                    Just cs -> do
+                        mapM_ writeCall cs
+                        go handle
+            getCalls chan = do
+                cs <- readTVar chan
+                if (cs == []) then
+                    f <- readTVar allDone
+                    if f then
+                        return $ Nothing
+                    else
+                        retry
+                else
+                    do
+                        writeTVar chan []
+                        return $ concat $ reverse cs
+            writeCall = hPutStrLn . showCall
+            showCall call = showTimeSpec (start call) ++ ","
+                            ++ showTimeSpec (end call)
+                            ++ showResult (succeeded call)
+            showResult Success = ""
+            showResult (BadStatus st) = ",ERR,BAD STATUS: " ++ show st
+            showResult (Failure err) = ",ERR," ++ show err
+        
+    clientThread :: ClientState -> StdGen -> IO ()
     clientThread cstate rgen = do
             manager <- newManager defaultManagerSettings
             (barrier cstate)
-            go manager rgen []
+            let (n, rgen2) = randomR (0, 100::Int) rgen
+            go manager rgen2 (1000 + n) []
         where
-            go manager r res = do
+            go manager r n res = do
                 let (r2, req) = makeReq r
                 s <- getTime Monotonic
                 succ1 <- catch (doCall manager req) handler
@@ -87,7 +119,11 @@ module Main where
                 c <- evaluate $ force c'
                 cont <- readTVarIO (flag cstate)
                 if cont then
-                    go manager r2 (c:res)
+                    if n == 0 then
+                        do
+                            
+                    else
+                        go manager r2 (n-1) (c:res)
                 else
                     return (c:res)
             doCall manager req = do
