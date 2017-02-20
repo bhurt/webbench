@@ -45,7 +45,6 @@ Constraints and Contexts for Servers
   running in a serverless architecture.
 * JSON serialization and deserialization on the servers must be performed using an open source, commercially accessible library.
 * Database communication and pooling on the servers must be done using an open source, commercially accessible library.
-* Servers will all have 8 GB of swap.
 
 Server Configuration
 =====================
