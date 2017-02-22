@@ -8,12 +8,10 @@ user_count = 10_000_000
 
 conn = PG.connect()
 
-conn.exec("TRUNCATE TABLE userinterests RESTART IDENTITY");
-conn.exec("TRUNCATE TABLE interests RESTART IDENTITY");
-conn.exec("TRUNCATE TABLE users RESTART IDENTITY");
+conn.exec("TRUNCATE userinterests, interests, users RESTART IDENTITY");
 
 conn.copy_data "COPY interests (name) FROM STDIN CSV" do
-  [
+  interests = [
     'app.name',
     'beer.name',
     'book.title',
@@ -26,16 +24,22 @@ conn.copy_data "COPY interests (name) FROM STDIN CSV" do
     'twin_peaks.characters',
     'rock_band.name',
     'rick_and_morty.characters'
-  ].each do |key|
-    Faker::Base.fetch_all(key).each do |interest|
+  ].map do |key|
+    Faker::Base.fetch_all(key).map do |interest|
       puts "Adding an interest of #{interest} from #{key}\n"
-      conn.put_copy_data [interest].to_csv
+      interest
     end
   end
 
   Faker::StarWars.characters.each do |character|
     puts "Adding an interest of #{character} from Star Wars characters\n"
-    conn.put_copy_data [character].to_csv
+    interests.push(character)
+  end
+
+  interests.flatten!
+  interests.uniq!
+  interests.each do |interest|
+    conn.put_copy_data [interest].to_csv
   end
 
 end

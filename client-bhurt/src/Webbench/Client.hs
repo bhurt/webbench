@@ -49,6 +49,7 @@ setupClients count = do
     prefix = "http://" ++ host ++ ":" ++ (show port)
     opts = Wreq.defaults & Wreq.manager .~ Left (
                                                   defaultManagerSettings {
+                                                                           {
                                                                          }
                                                 )
     call endpoint = Wreq.getWith opts $ prefix ++ endpoint
